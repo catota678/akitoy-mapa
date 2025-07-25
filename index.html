@@ -1,0 +1,68 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AKITOY | Mapa de Emprendimientos</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  <style>
+    html, body { margin:0; padding:0; font-family:sans-serif; }
+    #mapa { height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="mapa"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+  <script>
+    var mapa = L.map('mapa').setView([13.7, -88.9], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(mapa);
+
+    let miUbicacion = null;
+    let marcadorUbicacion = null;
+    let routingControl = null;
+    let destino = L.latLng(13.9946, -89.5597); // Destino fijo de ejemplo
+
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition(
+        (pos) => {
+          const latlng = [pos.coords.latitude, pos.coords.longitude];
+          miUbicacion = L.latLng(latlng);
+
+          if (!marcadorUbicacion) {
+            marcadorUbicacion = L.marker(latlng).addTo(mapa).bindPopup("📍 Estás aquí").openPopup();
+          } else {
+            marcadorUbicacion.setLatLng(latlng);
+          }
+
+          if (routingControl) {
+            mapa.removeControl(routingControl);
+          }
+
+          routingControl = L.Routing.control({
+            waypoints: [miUbicacion, destino],
+            lineOptions: { styles: [{ color: 'green', weight: 4 }] },
+            routeWhileDragging: false,
+            router: L.Routing.osrmv1({
+              serviceUrl: 'https://router.project-osrm.org/route/v1'
+            }),
+            createMarker: function(i, wp) {
+              return i === 1 ? L.marker(wp.latLng).bindPopup("📍 Destino") : null;
+            },
+            language: 'es'
+          }).addTo(mapa);
+        },
+        (err) => alert("No se pudo obtener tu ubicación."),
+        { enableHighAccuracy: true }
+      );
+    } else {
+      alert("Tu navegador no soporta geolocalización.");
+    }
+  </script>
+</body>
+</html>
